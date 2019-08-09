@@ -4,7 +4,8 @@ use rand::{
     seq::SliceRandom
 };
 
-pub enum CardSuit {
+#[derive(PartialEq)]
+enum CardSuit {
     Heart,
     Spade,
     Club,
@@ -24,6 +25,7 @@ impl fmt::Display for CardSuit {
     }
 }
 
+#[derive(PartialEq)]
 enum CardValue {
     Ace,
     Two,
@@ -62,50 +64,78 @@ impl fmt::Display for CardValue {
     }
 }
 
-pub struct Card<'a> {
-    suit: &'a CardSuit,
-    value: &'a CardValue
+#[derive(PartialEq)]
+pub struct Card {
+    suit: CardSuit,
+    value: CardValue
 }
 
-impl<'a> fmt::Display for Card<'a> {
+impl fmt::Display for Card {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{} of {}", self.value, self.suit)
     }
 }
 
-pub struct Deck<'a> {
-    cards: Vec<Card<'a>>
+pub struct Deck {
+    cards: Vec<Card>
 }
 
-impl<'a> Deck<'a> {
-    pub fn new() -> Deck<'a> {
-        let mut cards = Vec::new();
-        static CARDSUITS: [CardSuit; 4] = [CardSuit::Heart, CardSuit::Spade, CardSuit::Club, CardSuit::Diamond];
-        static CARDVALUES: [CardValue; 13] = [
-            CardValue::Ace,
-            CardValue::Two,
-            CardValue::Three,
-            CardValue::Four,
-            CardValue::Five,
-            CardValue::Six,
-            CardValue::Seven,
-            CardValue::Eight,
-            CardValue::Nine,
-            CardValue::Ten,
-            CardValue::Jack,
-            CardValue::Queen,
-            CardValue::King
+impl Deck {
+    pub fn new() -> Deck {
+        let mut cards = vec![
+            Card { suit: CardSuit::Heart, value: CardValue::Ace },
+            Card { suit: CardSuit::Heart, value: CardValue::Two },
+            Card { suit: CardSuit::Heart, value: CardValue::Three },
+            Card { suit: CardSuit::Heart, value: CardValue::Four },
+            Card { suit: CardSuit::Heart, value: CardValue::Five },
+            Card { suit: CardSuit::Heart, value: CardValue::Six },
+            Card { suit: CardSuit::Heart, value: CardValue::Seven },
+            Card { suit: CardSuit::Heart, value: CardValue::Eight },
+            Card { suit: CardSuit::Heart, value: CardValue::Nine },
+            Card { suit: CardSuit::Heart, value: CardValue::Ten },
+            Card { suit: CardSuit::Heart, value: CardValue::Jack },
+            Card { suit: CardSuit::Heart, value: CardValue::Queen },
+            Card { suit: CardSuit::Heart, value: CardValue::King },
+            Card { suit: CardSuit::Spade, value: CardValue::Ace },
+            Card { suit: CardSuit::Spade, value: CardValue::Two },
+            Card { suit: CardSuit::Spade, value: CardValue::Three },
+            Card { suit: CardSuit::Spade, value: CardValue::Four },
+            Card { suit: CardSuit::Spade, value: CardValue::Five },
+            Card { suit: CardSuit::Spade, value: CardValue::Six },
+            Card { suit: CardSuit::Spade, value: CardValue::Seven },
+            Card { suit: CardSuit::Spade, value: CardValue::Eight },
+            Card { suit: CardSuit::Spade, value: CardValue::Nine },
+            Card { suit: CardSuit::Spade, value: CardValue::Ten },
+            Card { suit: CardSuit::Spade, value: CardValue::Jack },
+            Card { suit: CardSuit::Spade, value: CardValue::Queen },
+            Card { suit: CardSuit::Spade, value: CardValue::King },
+            Card { suit: CardSuit::Club, value: CardValue::Ace },
+            Card { suit: CardSuit::Club, value: CardValue::Two },
+            Card { suit: CardSuit::Club, value: CardValue::Three },
+            Card { suit: CardSuit::Club, value: CardValue::Four },
+            Card { suit: CardSuit::Club, value: CardValue::Five },
+            Card { suit: CardSuit::Club, value: CardValue::Six },
+            Card { suit: CardSuit::Club, value: CardValue::Seven },
+            Card { suit: CardSuit::Club, value: CardValue::Eight },
+            Card { suit: CardSuit::Club, value: CardValue::Nine },
+            Card { suit: CardSuit::Club, value: CardValue::Ten },
+            Card { suit: CardSuit::Club, value: CardValue::Jack },
+            Card { suit: CardSuit::Club, value: CardValue::Queen },
+            Card { suit: CardSuit::Club, value: CardValue::King },
+            Card { suit: CardSuit::Diamond, value: CardValue::Ace },
+            Card { suit: CardSuit::Diamond, value: CardValue::Two },
+            Card { suit: CardSuit::Diamond, value: CardValue::Three },
+            Card { suit: CardSuit::Diamond, value: CardValue::Four },
+            Card { suit: CardSuit::Diamond, value: CardValue::Five },
+            Card { suit: CardSuit::Diamond, value: CardValue::Six },
+            Card { suit: CardSuit::Diamond, value: CardValue::Seven },
+            Card { suit: CardSuit::Diamond, value: CardValue::Eight },
+            Card { suit: CardSuit::Diamond, value: CardValue::Nine },
+            Card { suit: CardSuit::Diamond, value: CardValue::Ten },
+            Card { suit: CardSuit::Diamond, value: CardValue::Jack },
+            Card { suit: CardSuit::Diamond, value: CardValue::Queen },
+            Card { suit: CardSuit::Diamond, value: CardValue::King },
         ];
-
-        for suit in CARDSUITS.into_iter() {
-            for value in CARDVALUES.into_iter() {
-                cards.push(Card {
-                    suit,
-                    value
-                });
-            }
-        }
-
 
         let mut rng = thread_rng();
         cards.shuffle(&mut rng);
@@ -122,5 +152,91 @@ impl<'a> Deck<'a> {
     /// Returns the number of cards still left in the deck
     pub fn len(&self) -> usize {
         self.cards.len()
+    }
+
+    fn contains(&self, card: &Card) -> bool {
+        self.cards.contains(card)
+    }
+}
+
+mod tests {
+    use super::*;
+
+    #[test]
+    fn deck_has_correct_number_of_cards() {
+        assert_eq!(52, Deck::new().len());
+    }
+
+    #[test]
+    fn deck_pop_removes_card() {
+        let mut deck = Deck::new();
+        let len = deck.len();
+        deck.pop();
+
+        assert_eq!(len - 1, deck.len());
+    }
+
+    #[test]
+    fn deck_cards_are_unique() {
+        let cards = vec![
+            Card { suit: CardSuit::Heart, value: CardValue::Ace },
+            Card { suit: CardSuit::Heart, value: CardValue::Two },
+            Card { suit: CardSuit::Heart, value: CardValue::Three },
+            Card { suit: CardSuit::Heart, value: CardValue::Four },
+            Card { suit: CardSuit::Heart, value: CardValue::Five },
+            Card { suit: CardSuit::Heart, value: CardValue::Six },
+            Card { suit: CardSuit::Heart, value: CardValue::Seven },
+            Card { suit: CardSuit::Heart, value: CardValue::Eight },
+            Card { suit: CardSuit::Heart, value: CardValue::Nine },
+            Card { suit: CardSuit::Heart, value: CardValue::Ten },
+            Card { suit: CardSuit::Heart, value: CardValue::Jack },
+            Card { suit: CardSuit::Heart, value: CardValue::Queen },
+            Card { suit: CardSuit::Heart, value: CardValue::King },
+            Card { suit: CardSuit::Spade, value: CardValue::Ace },
+            Card { suit: CardSuit::Spade, value: CardValue::Two },
+            Card { suit: CardSuit::Spade, value: CardValue::Three },
+            Card { suit: CardSuit::Spade, value: CardValue::Four },
+            Card { suit: CardSuit::Spade, value: CardValue::Five },
+            Card { suit: CardSuit::Spade, value: CardValue::Six },
+            Card { suit: CardSuit::Spade, value: CardValue::Seven },
+            Card { suit: CardSuit::Spade, value: CardValue::Eight },
+            Card { suit: CardSuit::Spade, value: CardValue::Nine },
+            Card { suit: CardSuit::Spade, value: CardValue::Ten },
+            Card { suit: CardSuit::Spade, value: CardValue::Jack },
+            Card { suit: CardSuit::Spade, value: CardValue::Queen },
+            Card { suit: CardSuit::Spade, value: CardValue::King },
+            Card { suit: CardSuit::Club, value: CardValue::Ace },
+            Card { suit: CardSuit::Club, value: CardValue::Two },
+            Card { suit: CardSuit::Club, value: CardValue::Three },
+            Card { suit: CardSuit::Club, value: CardValue::Four },
+            Card { suit: CardSuit::Club, value: CardValue::Five },
+            Card { suit: CardSuit::Club, value: CardValue::Six },
+            Card { suit: CardSuit::Club, value: CardValue::Seven },
+            Card { suit: CardSuit::Club, value: CardValue::Eight },
+            Card { suit: CardSuit::Club, value: CardValue::Nine },
+            Card { suit: CardSuit::Club, value: CardValue::Ten },
+            Card { suit: CardSuit::Club, value: CardValue::Jack },
+            Card { suit: CardSuit::Club, value: CardValue::Queen },
+            Card { suit: CardSuit::Club, value: CardValue::King },
+            Card { suit: CardSuit::Diamond, value: CardValue::Ace },
+            Card { suit: CardSuit::Diamond, value: CardValue::Two },
+            Card { suit: CardSuit::Diamond, value: CardValue::Three },
+            Card { suit: CardSuit::Diamond, value: CardValue::Four },
+            Card { suit: CardSuit::Diamond, value: CardValue::Five },
+            Card { suit: CardSuit::Diamond, value: CardValue::Six },
+            Card { suit: CardSuit::Diamond, value: CardValue::Seven },
+            Card { suit: CardSuit::Diamond, value: CardValue::Eight },
+            Card { suit: CardSuit::Diamond, value: CardValue::Nine },
+            Card { suit: CardSuit::Diamond, value: CardValue::Ten },
+            Card { suit: CardSuit::Diamond, value: CardValue::Jack },
+            Card { suit: CardSuit::Diamond, value: CardValue::Queen },
+            Card { suit: CardSuit::Diamond, value: CardValue::King },
+        ];
+
+        let deck = Deck::new();
+
+        for card in cards.iter() {
+            assert!(deck.contains(card));
+        }
     }
 }
