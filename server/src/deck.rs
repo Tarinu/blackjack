@@ -154,12 +154,14 @@ impl Deck {
         self.cards.len()
     }
 
+    #[allow(dead_code)]
     fn contains(&self, card: &Card) -> bool {
         self.cards.contains(card)
     }
 }
 
 mod tests {
+    #[allow(unused_imports)]
     use super::*;
 
     #[test]
@@ -171,14 +173,17 @@ mod tests {
     fn deck_pop_removes_card() {
         let mut deck = Deck::new();
         let len = deck.len();
-        deck.pop();
-
+        let card = deck.pop();
         assert_eq!(len - 1, deck.len());
+        
+        assert!(card.is_some());
+        let card = card.unwrap();
+        assert!(!deck.contains(&card));
     }
 
     #[test]
     fn deck_cards_are_unique() {
-        let cards = vec![
+        let cards = [
             Card { suit: CardSuit::Heart, value: CardValue::Ace },
             Card { suit: CardSuit::Heart, value: CardValue::Two },
             Card { suit: CardSuit::Heart, value: CardValue::Three },

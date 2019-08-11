@@ -1,13 +1,15 @@
+#[macro_use]
+extern crate log;
+extern crate env_logger;
+
 mod deck;
+mod server;
 
 use deck::Deck;
 
 fn main() {
-    let mut deck = Deck::new();
-
-    println!("{}", deck.len());
-    while let Some(card) = deck.pop() {
-        println!("{}", card);
-    }
-    println!("{}", deck.len());
+    env_logger::init();
+    let mut _deck = Deck::new();
+    let mut server = server::Server::new("localhost:2024");
+    server.start().unwrap();
 }
