@@ -9,7 +9,6 @@ use std::net::{
     ToSocketAddrs,
     Shutdown
 };
-use std::marker::Send;
 
 struct Connection {
     stream: TcpStream
@@ -20,7 +19,7 @@ impl Connection {
         let string = message.to_string();
         let bytes = string.as_bytes().len();
         debug!("Writing {} bytes to stream", bytes);
-        self.stream.write_all(format!("{}\n{}", bytes, string).as_bytes()).unwrap()
+        self.stream.write_all(format!("{}\r\n{}", bytes, string).as_bytes()).unwrap()
     }
 }
 
@@ -37,7 +36,7 @@ pub struct Server<T> {
     connections: Vec<Arc<Mutex<Connection>>>
 }
 
-impl<T> Server<T> where T: ToSocketAddrs + Send {
+impl<T> Server<T> where T: ToSocketAddrs {
     pub fn new(address: T) -> Server<T> {
         Server {
             address: address,
