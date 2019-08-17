@@ -15,10 +15,10 @@ enum CardSuit {
 impl fmt::Display for CardSuit {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let text = match *self {
-            CardSuit::Heart => "hearts",
-            CardSuit::Club => "clubs",
-            CardSuit::Spade => "spades",
-            CardSuit::Diamond => "diamonds"
+            Self::Heart => "hearts",
+            Self::Club => "clubs",
+            Self::Spade => "spades",
+            Self::Diamond => "diamonds"
         };
 
         write!(f, "{}", text)
@@ -45,19 +45,19 @@ enum CardValue {
 impl fmt::Display for CardValue {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let text = match *self {
-            CardValue::Ace => "ace",
-            CardValue::Two => "two",
-            CardValue::Three => "three",
-            CardValue::Four => "four",
-            CardValue::Five => "five",
-            CardValue::Six => "six",
-            CardValue::Seven => "seven",
-            CardValue::Eight => "eight",
-            CardValue::Nine => "nine",
-            CardValue::Ten => "ten",
-            CardValue::Jack => "jack",
-            CardValue::Queen => "queen",
-            CardValue::King => "king"
+            Self::Ace => "ace",
+            Self::Two => "two",
+            Self::Three => "three",
+            Self::Four => "four",
+            Self::Five => "five",
+            Self::Six => "six",
+            Self::Seven => "seven",
+            Self::Eight => "eight",
+            Self::Nine => "nine",
+            Self::Ten => "ten",
+            Self::Jack => "jack",
+            Self::Queen => "queen",
+            Self::King => "king"
         };
 
         write!(f, "{}", text)
@@ -145,24 +145,26 @@ impl Deck {
         }
     }
 
+    #[allow(dead_code)]
     pub fn pop(&mut self) -> Option<Card> {
         self.cards.pop()
     }
-
-    /// Returns the number of cards still left in the deck
-    pub fn len(&self) -> usize {
-        self.cards.len()
-    }
-
-    #[allow(dead_code)]
-    fn contains(&self, card: &Card) -> bool {
-        self.cards.contains(card)
-    }
 }
 
+#[cfg(test)]
 mod tests {
     #[allow(unused_imports)]
     use super::*;
+
+    impl Deck {
+        pub fn len(&self) -> usize {
+            self.cards.len()
+        }
+
+        fn contains(&self, card: &Card) -> bool {
+            self.cards.contains(card)
+        }
+    }
 
     #[test]
     fn deck_has_correct_number_of_cards() {
