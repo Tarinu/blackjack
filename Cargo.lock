@@ -37,6 +37,7 @@ version = "0.1.0"
 dependencies = [
  "env_logger 0.6.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "network 0.1.0",
 ]
 
 [[package]]
@@ -90,6 +91,13 @@ dependencies = [
 name = "memchr"
 version = "2.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
+name = "network"
+version = "0.1.0"
+dependencies = [
+ "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
+]
 
 [[package]]
 name = "ppv-lite86"
@@ -160,6 +168,7 @@ version = "0.1.0"
 dependencies = [
  "env_logger 0.6.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "network 0.1.0",
  "rand 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
