@@ -1,6 +1,5 @@
 use std::fmt::Display;
 use std::io;
-use std::io::Write;
 use std::net::{Shutdown, TcpListener, TcpStream, ToSocketAddrs};
 use std::sync::{Arc, Mutex};
 use std::thread;
@@ -9,21 +8,38 @@ use network;
 
 struct Connection {
     stream: TcpStream,
+    buffer: io::BufReader<TcpStream>,
 }
 
 impl Connection {
+    fn new(stream: TcpStream) -> Connection {
+        let clone = stream.try_clone().unwrap();
+        Connection {
+            stream,
+            buffer: io::BufReader::new(clone),
+        }
+    }
+
     fn send(&mut self, message: impl Display) {
         network::send(&self.stream, message).unwrap();
+    }
+
+    fn read(&mut self) -> network::MessageResult {
+        network::read::read(&mut self.buffer).unwrap().parse()
+    }
+
+    fn close(&mut self) {
+        info!(
+            "Connection {} is closing.",
+            self.stream.peer_addr().unwrap()
+        );
+        self.stream.shutdown(Shutdown::Both).unwrap();
     }
 }
 
 impl Drop for Connection {
     fn drop(&mut self) {
-        info!("Connection is being dropped.");
-        self.stream
-            .write_all("Server is shutting down.".as_bytes())
-            .unwrap();
-        self.stream.shutdown(Shutdown::Both).unwrap();
+        self.close();
     }
 }
 
@@ -55,13 +71,26 @@ where
             let stream = stream.unwrap();
             info!("New incoming connection: {}", stream.peer_addr().unwrap());
 
-            let connection = Arc::new(Mutex::new(Connection { stream: stream }));
+            let connection = Arc::new(Mutex::new(Connection::new(stream)));
             let thread_connection = connection.clone();
             self.connections.push(connection);
 
             thread::spawn(move || {
-                let mut connection = thread_connection.lock().unwrap();
-                connection.send("Connected");
+                while let Ok(connection) = thread_connection.lock() {
+                    let mut connection = connection;
+                    match connection.read() {
+                        Ok(message) => match message {
+                            network::Message::Exit => {
+                                connection.close();
+                                break;
+                            }
+                        },
+                        Err(e) => {
+                            warn!("{}", e);
+                            connection.send("Server couldn't understand the command");
+                        }
+                    }
+                }
             });
         }
 

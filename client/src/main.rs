@@ -22,14 +22,36 @@ fn main() {
         let reader_ref = reader.by_ref();
 
         loop {
-            let message = network::read(reader_ref);
-            println!("{}", message.unwrap());
+            match network::read::read(reader_ref) {
+                Ok(message) => println!("{}", message),
+                Err(e) => {
+                    if e.kind() == network::read::ErrorKind::ConnectionLost {
+                        println!("Connection to the server lost");
+                        break;
+                    } else {
+                        warn!("{}", e);
+                    }
+                }
+            }
         }
+
+        debug!("Reader thread reached its end");
     });
 
     for line in stdin().lock().lines() {
         match line {
-            Ok(line) => println!("{}", line),
+            Ok(line) => match line.parse::<network::Message>() {
+                Ok(message) => {
+                    if let Err(e) = network::send(&stream, message) {
+                        error!("{}", e);
+                        println!("Failed to send the command to the server");
+                    }
+                }
+                Err(e) => {
+                    warn!("{}", e);
+                    println!("Invalid command");
+                }
+            },
             Err(e) => {
                 warn!("{}", e);
                 println!("Invalid command");

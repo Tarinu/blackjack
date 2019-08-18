@@ -1,6 +1,8 @@
 #[macro_use]
 extern crate log;
 
+pub mod read;
+
 use std::{
     error::Error,
     fmt,
@@ -22,6 +24,8 @@ impl fmt::Display for InvalidMessageError {
     }
 }
 
+pub type MessageResult = Result<Message, InvalidMessageError>;
+
 #[derive(PartialEq, Debug)]
 pub enum Message {
     Exit,
@@ -30,7 +34,7 @@ pub enum Message {
 impl FromStr for Message {
     type Err = InvalidMessageError;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+    fn from_str(s: &str) -> MessageResult {
         let s = s.to_lowercase();
         match s.trim() {
             "exit" => Ok(Self::Exit),
@@ -58,23 +62,6 @@ pub fn send(mut stream: &TcpStream, message: impl fmt::Display) -> Result<(), io
     Ok(())
 }
 
-pub fn read(reader: &mut impl io::BufRead) -> Result<String, Box<dyn Error>> {
-    let mut message = String::new();
-
-    debug!("Waiting for incoming message");
-    reader.read_line(&mut message)?;
-
-    let size = message.trim_end().to_string().parse::<u64>()?;
-    debug!("Message is {} bytes long", size);
-
-    let mut buffer = Vec::new();
-    reader.take(size).read_to_end(&mut buffer)?;
-    let message = String::from_utf8_lossy(&buffer).to_string();
-    debug!("Received \"{}\" from server", message);
-
-    Ok(message)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -82,7 +69,7 @@ mod tests {
     mod message {
         use super::Message;
         #[test]
-        fn message_valid_parsing() {
+        fn valid_parsing() {
             assert_eq!(Message::Exit, "exit".parse().unwrap());
             assert_eq!(Message::Exit, "EXIT".parse().unwrap());
             assert_eq!(Message::Exit, "eXIt".parse().unwrap());
@@ -90,7 +77,7 @@ mod tests {
         }
 
         #[test]
-        fn message_parse_types() {
+        fn all_parse_types_covered() {
             assert_eq!(Message::Exit, "exit".parse().unwrap());
         }
     }
