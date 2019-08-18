@@ -18,43 +18,40 @@ fn main() {
         .expect("Failed to clone the stream for reading");
 
     thread::spawn(move || {
-        let mut reader = BufReader::new(read_stream);
-        let reader_ref = reader.by_ref();
-
-        loop {
-            match network::read::read(reader_ref) {
-                Ok(message) => println!("{}", message),
-                Err(e) => {
-                    if e.kind() == network::read::ErrorKind::ConnectionLost {
-                        println!("Connection to the server lost");
-                        break;
-                    } else {
+        for line in stdin().lock().lines() {
+            match line {
+                Ok(line) => match line.parse::<network::Message>() {
+                    Ok(message) => {
+                        if let Err(e) = network::send(&stream, message) {
+                            error!("{}", e);
+                            println!("Failed to send the command to the server");
+                        }
+                    }
+                    Err(e) => {
                         warn!("{}", e);
+                        println!("Invalid command");
                     }
-                }
-            }
-        }
-
-        debug!("Reader thread reached its end");
-    });
-
-    for line in stdin().lock().lines() {
-        match line {
-            Ok(line) => match line.parse::<network::Message>() {
-                Ok(message) => {
-                    if let Err(e) = network::send(&stream, message) {
-                        error!("{}", e);
-                        println!("Failed to send the command to the server");
-                    }
-                }
+                },
                 Err(e) => {
                     warn!("{}", e);
                     println!("Invalid command");
                 }
-            },
+            }
+        }
+    });
+
+    let mut reader = BufReader::new(read_stream);
+
+    loop {
+        match network::read::read(&mut reader) {
+            Ok(message) => println!("{}", message),
             Err(e) => {
-                warn!("{}", e);
-                println!("Invalid command");
+                if e.kind() == network::read::ErrorKind::ConnectionLost {
+                    println!("Connection to the server lost");
+                    break;
+                } else {
+                    warn!("{}", e);
+                }
             }
         }
     }
