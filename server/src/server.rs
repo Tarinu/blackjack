@@ -1,10 +1,12 @@
 use std::fmt::Display;
 use std::io;
 use std::net::{Shutdown, TcpListener, TcpStream, ToSocketAddrs};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, mpsc};
 use std::thread;
 
 use network;
+
+type ConnectionWrapper = Arc<Mutex<Connection>>;
 
 struct Connection {
     stream: TcpStream,
@@ -43,9 +45,17 @@ impl Drop for Connection {
     }
 }
 
+/// Events that the threads can send to the server
+enum ServerEvent {
+    /// Store connection in the server
+    Add(ConnectionWrapper),
+    /// Remove the connection from server
+    Drop(ConnectionWrapper)
+}
+
 pub struct Server<T> {
     address: T,
-    connections: Vec<Arc<Mutex<Connection>>>,
+    connections: Vec<ConnectionWrapper>,
 }
 
 impl<T> Server<T>
@@ -67,33 +77,60 @@ where
             listener.local_addr().unwrap()
         );
 
-        for stream in listener.incoming() {
-            let stream = stream.unwrap();
-            info!("New incoming connection: {}", stream.peer_addr().unwrap());
+        let (sender, receiver): (mpsc::Sender<ServerEvent>, mpsc::Receiver<ServerEvent>) = mpsc::channel();
+        self.listen_incoming_connections(listener, sender);
 
-            let connection = Arc::new(Mutex::new(Connection::new(stream)));
-            let thread_connection = connection.clone();
-            self.connections.push(connection);
-
-            thread::spawn(move || {
-                while let Ok(connection) = thread_connection.lock() {
-                    let mut connection = connection;
-                    match connection.read() {
-                        Ok(message) => match message {
-                            network::Message::Exit => {
-                                connection.close();
-                                break;
-                            }
-                        },
-                        Err(e) => {
-                            warn!("{}", e);
-                            connection.send("Server couldn't understand the command");
-                        }
-                    }
-                }
-            });
+        for event in receiver.iter() {
+            match event {
+                ServerEvent::Add(connection) => self.push_connection(connection),
+                ServerEvent::Drop(connection) => self.close_connection(connection)
+            }
         }
 
         Ok(())
+    }
+
+    fn listen_incoming_connections(&self, listener: TcpListener, sender: mpsc::Sender<ServerEvent>) {
+        thread::spawn(move || {
+            for stream in listener.incoming() {
+                let stream = stream.unwrap();
+                info!("New incoming connection: {}", stream.peer_addr().unwrap());
+
+                let connection = Arc::new(Mutex::new(Connection::new(stream)));
+                let thread_connection = connection.clone();
+                sender.send(ServerEvent::Add(connection)).unwrap();
+
+                let sender = sender.clone();
+
+                thread::spawn(move || {
+                    while let Ok(connection) = thread_connection.lock() {
+                        let mut connection = connection;
+                        match connection.read() {
+                            Ok(message) => match message {
+                                network::Message::Exit => {
+                                    sender.send(ServerEvent::Drop(thread_connection.clone())).unwrap();
+                                    break;
+                                }
+                            },
+                            Err(e) => {
+                                warn!("{}", e);
+                                connection.send("Server couldn't understand the command");
+                            }
+                        }
+                    }
+                });
+            }
+        });
+    }
+
+    fn push_connection(&mut self, connection: ConnectionWrapper) {
+        self.connections.push(connection);
+    }
+
+    fn close_connection(&mut self, connection: ConnectionWrapper) {
+        // No need to manually close the connection since it gets dropped anyway once all arc pointers are gone
+        self.connections.retain(|conn| {
+            !Arc::ptr_eq(&connection, conn)
+        });
     }
 }
