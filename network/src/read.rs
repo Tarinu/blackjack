@@ -107,7 +107,7 @@ pub fn read(reader: &mut impl io::BufRead) -> ReadResult {
         Err(e) => return Err(Error::from(e)),
     }
 
-    debug!("Received \"{:?}\" from server", message);
+    debug!("Received {:?} from server", message);
     let size = message.trim_end().to_string().parse::<u64>()?;
 
     debug!("Message is {} bytes long", size);

@@ -29,16 +29,70 @@ pub type MessageResult = Result<Message, InvalidMessageError>;
 #[derive(PartialEq, Debug)]
 pub enum Message {
     Exit,
+    Login(String),
+    Balance,
+    Deposit(u32),
+    Start(u32),
+    Hit,
+    Stand
 }
 
 impl FromStr for Message {
     type Err = InvalidMessageError;
 
     fn from_str(s: &str) -> MessageResult {
-        let s = s.to_lowercase();
-        match s.trim() {
-            "exit" => Ok(Self::Exit),
-            _ => Err(InvalidMessageError { message: s }),
+        let s = s.trim();
+        let mut split = s.split_whitespace();
+        match split.next() {
+            Some(keyword) => match keyword.to_lowercase().as_ref() {
+                "exit" => Ok(Self::Exit),
+                "login" => Ok(Self::Login(split.collect::<Vec<&str>>().join(" "))),
+                "balance" => Ok(Self::Balance),
+                "deposit" => {
+                    match split.next() {
+                        Some(amount) => {
+                            match amount.to_string().parse::<u32>() {
+                                Ok(amount) => {
+                                    if amount <= 0 {
+                                        return Err(InvalidMessageError { message: String::from("Deposit amount has to be a positive number") });
+                                    }
+
+                                    Ok(Self::Deposit(amount))
+                                },
+                                Err(e) => {
+                                    warn!("{}", e);
+                                    Err(InvalidMessageError { message: String::from("Unable to parse input to integer") })
+                                }
+                            }
+                        },
+                        None => Err(InvalidMessageError { message: String::from("Amount missing") })
+                    }
+                },
+                "start" => {
+                    match split.next() {
+                        Some(amount) => {
+                            match amount.to_string().parse::<u32>() {
+                                Ok(amount) => {
+                                    if amount <= 0 {
+                                        return Err(InvalidMessageError { message: String::from("Bet amount has to be a positive number") });
+                                    }
+
+                                    Ok(Self::Start(amount))
+                                },
+                                Err(e) => {
+                                    warn!("{}", e);
+                                    Err(InvalidMessageError { message: String::from("Unable to parse input to integer") })
+                                }
+                            }
+                        },
+                        None => Err(InvalidMessageError { message: String::from("Amount missing") })
+                    }
+                },
+                "hit" => Ok(Self::Hit),
+                "stand" => Ok(Self::Stand),
+                _ => Err(InvalidMessageError { message: s.to_string() }),
+            },
+            None => Err(InvalidMessageError { message: String::from("Keyword missing") })
         }
     }
 }
@@ -46,7 +100,13 @@ impl FromStr for Message {
 impl fmt::Display for Message {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let text = match self {
-            Self::Exit => "exit",
+            Self::Exit => String::from("exit"),
+            Self::Login(username) => format!("login {}", username),
+            Self::Balance => String::from("balance"),
+            Self::Deposit(amount) => format!("deposit {}", amount),
+            Self::Start(amount) => format!("start {}", amount),
+            Self::Hit => String::from("hit"),
+            Self::Stand => String::from("stand")
         };
 
         write!(f, "{}", text)
@@ -77,8 +137,14 @@ mod tests {
         }
 
         #[test]
-        fn all_parse_types_covered() {
+        fn parse_all_types() {
             assert_eq!(Message::Exit, "exit".parse().unwrap());
+            assert_eq!(Message::Login("fooBAR".to_string()), "login fooBAR".parse().unwrap());
+            assert_eq!(Message::Balance, "balance".parse().unwrap());
+            assert_eq!(Message::Deposit(50), "deposit 50".parse().unwrap());
+            assert_eq!(Message::Start(25), "start 25".parse().unwrap());
+            assert_eq!(Message::Hit, "hit".parse().unwrap());
+            assert_eq!(Message::Stand, "stand".parse().unwrap());
         }
     }
 }
